@@ -1,0 +1,1 @@
+surge teardown appname.com && surge teardown appname.surge.sh && exit
