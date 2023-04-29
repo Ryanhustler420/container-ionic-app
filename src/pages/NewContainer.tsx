@@ -2,6 +2,7 @@ import { useHistory } from 'react-router';
 import Capacitor from '../utils/Capacitor';
 import { Resizer } from '../components/Resizer';
 import React, { useEffect, useState } from 'react';
+import { getQueryParam } from '../utils/common/helper';
 import { ContainerValidator, IContainerSchema } from '../utils/schemas';
 import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
 
@@ -18,6 +19,7 @@ const NewContainer: React.FC<{
 }> = props => {
     const history = useHistory();
     const [loading, setLoading] = useState<boolean>(false);
+    const [length,] = useState(getQueryParam()['length']);
 
     const titleRef = React.createRef<HTMLIonInputElement>();
     const subtitleRef = React.createRef<HTMLIonInputElement>();
@@ -27,12 +29,14 @@ const NewContainer: React.FC<{
         screen.name = name as string;
     };
 
+    useEffect(() => { if (!getQueryParam()['length']) return history.goBack(); }, []);
     useEffect(() => { if (props.rendering) { props.onHideTabs(); } });
 
     const onSubmitHandler = () => {
         const data: IContainerSchema = {
             title: titleRef.current?.value?.toString() || '',
             subtitle: subtitleRef.current?.value?.toString() || '',
+            index: Math.max(0, (+length)),
         };
         const result = ContainerValidator.validate(data);
         if (result.error != null) Capacitor.toast(result.error?.message);

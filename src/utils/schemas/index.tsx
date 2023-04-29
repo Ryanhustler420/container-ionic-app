@@ -1,14 +1,16 @@
 import Joi from 'joi';
 
-export interface IContainerSchema { id?: string; title: string; subtitle: string; };
+export interface IContainerSchema { id?: string; index?: number; title: string; subtitle: string; };
 const ContainerSchema = {
+    index: Joi.number().optional(),
     title: Joi.string().required().min(5),
     subtitle: Joi.string().required().min(5),
 };
 export const ContainerValidator = Joi.object().keys(ContainerSchema);
 
-export interface IBucketSchema { id?: string; title: string; subtitle: string; };
+export interface IBucketSchema { id?: string; index?: number; title: string; subtitle: string; };
 const BucketSchema = {
+    index: Joi.number().optional(),
     title: Joi.string().required().min(5),
     subtitle: Joi.string().required().min(5),
 };

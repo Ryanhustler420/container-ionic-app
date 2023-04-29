@@ -50,7 +50,7 @@ const NewDroplet: React.FC<{
             body: bodyRef.current?.getText() || '',
             note: noteRef.current?.value?.toString() || '',
             title: titleRef.current?.value?.toString() || '',
-            index: Math.max(0, (+length) - 1),
+            index: Math.max(0, (+length)),
         };
         const result = DropletValidator.validate(data);
         if (result.error != null) Capacitor.toast(result.error?.message);

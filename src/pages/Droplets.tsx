@@ -43,8 +43,8 @@ const Droplets: React.FC<{
     const getDropletsDetail = _.debounce(() => {
         firebase().then(async e => {
             getDocs(collection(e.db, collections.CONTAINERS, cid, collections.BUCKETS, bid, collections.DROPLETS)).then((querySnapshot) => {
-                const buckets = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id })) as IDropletSchema[];
-                const set = _.sortBy(buckets as IDropletSchema[], ['index']);
+                const droplets = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id })) as IDropletSchema[];
+                const set = _.sortBy(droplets as IDropletSchema[], ['index']);
                 setDroplets(set);
                 setFiltered(set);
                 setLoading(false);
@@ -186,6 +186,11 @@ const Droplets: React.FC<{
                     <IonInput placeholder='Search Droplets' className='font-bold' onIonChange={onFilterHandler} />
                     {droplets?.length} &nbsp; <IonIcon icon={waterOutline} />
                 </IonItem>
+                {!loading && filtered.length === 0 && <IonCard>
+                    <IonCardHeader>
+                        <IonCardSubtitle>Nothing just 💩 here...</IonCardSubtitle>
+                    </IonCardHeader>
+                </IonCard>}
                 <IonItemDivider></IonItemDivider>
                 <IonList>
                     <IonReorderGroup disabled={!swaping} onIonItemReorder={handleReorder} className='space-y-5'>
@@ -195,7 +200,7 @@ const Droplets: React.FC<{
                                     <IonRippleEffect></IonRippleEffect>
                                     <IonCardHeader>
                                         <IonCardSubtitle>{e?.title}</IonCardSubtitle>
-                                        <IonCardSubtitle color={'primary'}>{e?.note}</IonCardSubtitle>
+                                        <IonCardSubtitle className="capitalize" color={'primary'}>{e?.note}</IonCardSubtitle>
                                     </IonCardHeader>
                                     <IonCardContent>
                                         <InputBoxComponent text={e?.body} readonly copybtn id={i + ""} />

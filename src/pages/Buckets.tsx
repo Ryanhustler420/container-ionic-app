@@ -1,14 +1,15 @@
 import _ from 'lodash';
 import { useHistory } from 'react-router';
 import { Dialog } from '@capacitor/dialog';
+import Capacitor from '../utils/Capacitor';
 import { Resizer } from '../components/Resizer';
 import React, { useEffect, useState } from 'react';
 import { getQueryParam } from '../utils/common/helper';
 import { IBucketSchema, IContainerSchema } from '../utils/schemas';
-import { addOutline, chevronDownCircleOutline, logoBitbucket } from 'ionicons/icons';
-import { InputChangeEventDetail, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonItemDivider, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSpinner, IonText, IonTitle, IonToolbar, RefresherEventDetail } from '@ionic/react';
+import { addOutline, chevronDownCircleOutline, logoBitbucket, swapVerticalOutline } from 'ionicons/icons';
+import { InputChangeEventDetail, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonItemDivider, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSpinner, IonText, IonTitle, IonToolbar, ItemReorderEventDetail, RefresherEventDetail, IonReorder, IonReorderGroup, IonCard, IonCardHeader, IonCardSubtitle } from '@ionic/react';
 
-import { getDocs, getDoc, doc, deleteDoc, collection } from "firebase/firestore";
+import { getDocs, getDoc, doc, deleteDoc, collection, writeBatch } from "firebase/firestore";
 import firebase, { collections } from '../firebase';
 
 import './Buckets.css';
@@ -22,6 +23,8 @@ const Buckets: React.FC<{
     const history = useHistory();
     const [loading, setLoading] = useState(false);
     const [cid,] = useState(getQueryParam()['cid']);
+    const [swaping, setSwapint] = useState(false);
+    const [swapped, setSwapped] = useState(false);
     const [container, setContainer] = useState<IContainerSchema>();
     const [buckets, setBuckets] = useState<IBucketSchema[]>([]);
     const [filtered, setFiltered] = useState<IBucketSchema[]>([]);
@@ -39,7 +42,7 @@ const Buckets: React.FC<{
         firebase().then(async e => {
             getDocs(collection(e.db, collections.CONTAINERS, cid, collections.BUCKETS)).then((querySnapshot) => {
                 const buckets = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id })) as IContainerSchema[];
-                const set = buckets as IBucketSchema[];
+                const set = _.sortBy(buckets as IBucketSchema[], ['index']);
                 setBuckets(set);
                 setFiltered(set);
                 setLoading(false);
@@ -69,6 +72,37 @@ const Buckets: React.FC<{
     useEffect(() => { if (props.rendering) { props.onHideTabs(); } });
     useEffect(() => getContainerDetail(), []);
 
+    const onSwapHandler = async () => {
+        setSwapint(!swaping);
+        if (swapped) {
+            setLoading(true);
+            firebase().then(async e => {
+                const maxBatchAllow = 500; // NOTE: firebase batch can work for 500 docs at once only
+                const total = buckets.length;
+                const rounds = Math.ceil(total / maxBatchAllow);
+
+                let cursorAt = 0;
+                for (let index = 0; index < rounds; index++) {
+                    const batch = writeBatch(e.db);
+                    for (let pos = 0; pos < Math.min(maxBatchAllow, total); pos++) {
+                        buckets[cursorAt].index = cursorAt;
+                        let bid = buckets[cursorAt]?.id;
+                        if (bid) {
+                            const pointRef = doc(e.db, collections.CONTAINERS, cid, collections.BUCKETS, bid);
+                            batch.update(pointRef, buckets[cursorAt] as any);
+                            cursorAt++;
+                        }
+                    }
+                    await batch.commit();
+                }
+                setLoading(false);
+                setSwapped(false);
+            }).catch(() => {
+                Capacitor.toast('Something went wrong in batching process');
+            });
+        }
+    };
+
     const onFilterHandler = (e: CustomEvent<InputChangeEventDetail>) => {
         const keyword = e.detail.value;
         if (keyword) {
@@ -81,6 +115,21 @@ const Buckets: React.FC<{
         setLoading(true);
         getBucketsDetail();
         event.detail.complete();
+    };
+
+    function handleReorder(event: CustomEvent<ItemReorderEventDetail>) {
+        // Before complete is called with the items they will remain in the
+        // order before the drag
+        // console.log('Before complete', droplets);
+
+        // Finish the reorder and position the item in the DOM based on
+        // where the gesture ended. Update the items variable to the
+        // new order of items
+        setBuckets(event.detail.complete(buckets));
+
+        // After complete is called the items will be in the new order
+        // console.log('After complete', droplets);
+        setSwapped(true);
     };
 
     const breakPointTrigger = (width: number | undefined, name: string | undefined) => {
@@ -100,7 +149,10 @@ const Buckets: React.FC<{
                     </IonButtons>
                     <IonButtons slot='end'>
                         <IonSpinner hidden={!loading} />
-                        <IonButton onClick={() => history.push(`/new_bucket?cid=${cid}`)}>
+                        <IonButton color={swaping ? 'warning' : 'light'} onClick={onSwapHandler}>
+                            <IonIcon icon={swapVerticalOutline} />
+                        </IonButton>
+                        <IonButton onClick={() => history.push(`/new_bucket?cid=${cid}&length=${buckets.length}`)}>
                             <IonIcon icon={addOutline} />
                         </IonButton>
                     </IonButtons>
@@ -120,23 +172,31 @@ const Buckets: React.FC<{
                     <IonInput placeholder='Search Buckets' className='font-bold' onIonChange={onFilterHandler} />
                     {buckets?.length} &nbsp; <IonIcon icon={logoBitbucket} />
                 </IonItem>
+                {!loading && filtered.length === 0 && <IonCard>
+                    <IonCardHeader>
+                        <IonCardSubtitle>Nothing just 💩 here...</IonCardSubtitle>
+                    </IonCardHeader>
+                </IonCard>}
                 <IonItemDivider></IonItemDivider>
                 <IonList className="ion-no-padding">
-                    {_.map(filtered, (e: IBucketSchema, i) => (
-                        <IonItemSliding key={i} ref={e => e?.closeOpened()}>
-                            <IonItemOptions side="end">
-                                <IonItemOption color="dark" onClick={() => { deleteBucket(e?.id || '') }}>Delete</IonItemOption>
-                                <IonItemOption color="dark" onClick={() => history.push(`/edit_bucket?cid=${cid}&bid=${e?.id}`)}>Edit</IonItemOption>
-                            </IonItemOptions>
-                            <IonItem button onClick={() => history.push(`/droplets?cid=${cid}&bid=${e?.id}`)}>
-                                <IonLabel>
-                                    <IonText color={"primary"} className='font-bold'>{e?.title}</IonText>
-                                    <br />
-                                    <small className='truncate'>{e?.subtitle}</small>
-                                </IonLabel>
-                            </IonItem>
-                        </IonItemSliding>
-                    ))}
+                    <IonReorderGroup disabled={!swaping} onIonItemReorder={handleReorder} className='space-y-5'>
+                        {_.map(filtered, (e: IBucketSchema, i) => (
+                            <IonItemSliding key={i} ref={e => e?.closeOpened()}>
+                                <IonItemOptions side="end">
+                                    <IonItemOption color="dark" onClick={() => { deleteBucket(e?.id || '') }}>Delete</IonItemOption>
+                                    <IonItemOption color="dark" onClick={() => history.push(`/edit_bucket?cid=${cid}&bid=${e?.id}`)}>Edit</IonItemOption>
+                                </IonItemOptions>
+                                <IonItem button onClick={() => history.push(`/droplets?cid=${cid}&bid=${e?.id}`)}>
+                                    <IonLabel>
+                                        <IonText color={"primary"} className='font-bold capitalize'>{e?.title}</IonText>
+                                        <br />
+                                        <small className='capitalize ion-text-wrap'>{e?.subtitle}</small>
+                                    </IonLabel>
+                                </IonItem>
+                                <IonReorder slot="end"></IonReorder>
+                            </IonItemSliding>
+                        ))}
+                    </IonReorderGroup>
                 </IonList>
             </IonContent>
         </IonPage>

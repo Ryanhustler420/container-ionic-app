@@ -20,6 +20,7 @@ const NewBucket: React.FC<{
     const history = useHistory();
     const [loading, setLoading] = useState<boolean>(false);
     const [cid,] = useState(getQueryParam()['cid']);
+    const [length,] = useState(getQueryParam()['length']);
 
     const titleRef = React.createRef<HTMLIonInputElement>();
     const subtitleRef = React.createRef<HTMLIonInputElement>();
@@ -29,13 +30,14 @@ const NewBucket: React.FC<{
         screen.name = name as string;
     };
 
-    useEffect(() => { if (!getQueryParam()['cid']) return history.goBack(); }, []);
+    useEffect(() => { if (!getQueryParam()['cid'] || !getQueryParam()['length']) return history.goBack(); }, []);
     useEffect(() => { if (props.rendering) { props.onHideTabs(); } });
 
     const onSubmitHandler = () => {
         const data: IBucketSchema = {
             title: titleRef.current?.value?.toString() || '',
             subtitle: subtitleRef.current?.value?.toString() || '',
+            index: Math.max(0, (+length)),
         };
         const result = BucketValidator.validate(data);
         if (result.error != null) Capacitor.toast(result.error?.message);
