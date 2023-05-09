@@ -4,6 +4,7 @@
 Please close this and remove the remote using `git remote rm origin` and add your own remote `link`
 Please change the `defaultFirebaseConfig` object in the `firebase.ts` file
 Please change all the `appname` to `yourappname` in the entire project
+Please change the `youremail@gmail.com`
 Please generate the `android` or `ios` or npm build once your changed the `appname` to `yourappname`
 Please change `app icon` to your desire `app icon` and `splash` if you want
 Please make sure when you release the `android` app you need to keep the .rsa signature `safe` to somewhere
