@@ -66,9 +66,11 @@
     "watch-css": "tailwindcss build app.css -o public/style.css -w",
     "build-css": "tailwindcss build app.css -o public/style.css",
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && npm run surge-fallback  && npm run netlify-fallback",
     "test": "react-scripts test --transformIgnorePatterns 'node_modules/(?!(@ionic/react|@ionic/react-router|@ionic/core|@stencil/core|ionicons)/)'",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "surge-fallback": "type .\\build\\index.html > .\\build\\200.html",
+    "netlify-fallback": "echo /*    /index.html   200 > .\\build\\_redirects"
   },
   "eslintConfig": {
     "extends": [
