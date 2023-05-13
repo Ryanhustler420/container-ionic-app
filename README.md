@@ -26,6 +26,8 @@ service cloud.firestore {
 }
 ```
 
+> Make sure you manually create an `user` with `email and password` via firebase dashboard
+
 # How to clone
 
 ##### Forked
