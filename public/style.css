@@ -13,12 +13,16 @@
   position: relative
 }
 
+.right-0 {
+  right: 0px
+}
+
 .top-0 {
   top: 0px
 }
 
-.right-0 {
-  right: 0px
+.block {
+  display: block
 }
 
 .hidden {
@@ -47,12 +51,6 @@
   margin-bottom: calc(1.25rem * var(--tw-space-y-reverse))
 }
 
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap
-}
-
 .bg-black {
   --tw-bg-opacity: 1;
   background-color: rgb(0 0 0 / var(--tw-bg-opacity))
@@ -78,6 +76,10 @@
 
 .font-bold {
   font-weight: 700
+}
+
+.capitalize {
+  text-transform: capitalize
 }
 
 .text-white {

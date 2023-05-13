@@ -1,4 +1,5 @@
 // Import the functions you need from the SDKs you need
+import { getAuth } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
@@ -24,14 +25,18 @@ export const collections = {
     BUCKETS: 'buckets',
 };
 
+export let auth: any = null;
 export default async () => {
     let config = await getPreference(PREFERENCE_KEYS.FIREBASE_CONFIG);
     if (config.value) {
         let obj = JSON.parse(config?.value!);
         let app = initializeApp(obj);
-        return { analytics: getAnalytics(app), db: getFirestore(app) };
-    } else return {
-        analytics: getAnalytics(initializeApp(defaultFirebaseConfig)),
-        db: getFirestore(initializeApp(defaultFirebaseConfig)),
+        auth = getAuth();
+        return { analytics: getAnalytics(app), db: getFirestore(app), auth };
+    } else {
+        let db = getFirestore(initializeApp(defaultFirebaseConfig));
+        let app = initializeApp(defaultFirebaseConfig);
+        auth = getAuth();
+        return { analytics: getAnalytics(app), db, auth, }
     };
 };

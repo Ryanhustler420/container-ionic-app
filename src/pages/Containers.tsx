@@ -5,11 +5,14 @@ import Capacitor from '../utils/Capacitor';
 import { Resizer } from "../components/Resizer";
 import React, { useEffect, useState } from 'react';
 import { IContainerSchema } from '../utils/schemas';
-import { addOutline, chevronDownCircleOutline, cubeOutline, swapVerticalOutline } from "ionicons/icons";
-import { InputChangeEventDetail, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonItemDivider, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSpinner, IonText, IonTitle, IonToolbar, ItemReorderEventDetail, RefresherEventDetail, IonReorderGroup, IonReorder, IonCard, IonCardHeader, IonCardSubtitle } from '@ionic/react';
+import LoginModal from '../components/auth/LoginModal';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { OverlayEventDetail } from '@ionic/react/dist/types/components/react-component-lib/interfaces';
+import { addOutline, chevronDownCircleOutline, cubeOutline, logInOutline, logOutOutline, swapVerticalOutline } from "ionicons/icons";
+import { InputChangeEventDetail, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonItemDivider, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSpinner, IonText, IonTitle, IonToolbar, ItemReorderEventDetail, RefresherEventDetail, IonReorderGroup, IonReorder, IonCard, IonCardHeader, IonCardSubtitle, useIonModal } from '@ionic/react';
 
 import { collection, getDocs, deleteDoc, doc, writeBatch } from "firebase/firestore";
-import firebase, { collections } from '../firebase';
+import firebase, { auth, collections } from '../firebase';
 
 import './Containers.css';
 
@@ -25,6 +28,32 @@ const Containers: React.FC<{
   const [swapped, setSwapped] = useState(false);
   const [containers, setContainers] = useState<IContainerSchema[]>([]);
   const [filtered, setFiltered] = useState<IContainerSchema[]>([]);
+
+  const [present, dismiss] = useIonModal(LoginModal, { onDismiss: (data: string, role: string) => dismiss(data, role) });
+  const openLoginModal = () => {
+    present({
+      onWillDismiss: (ev: CustomEvent<OverlayEventDetail>) => {
+        if (ev.detail.data) {
+          const cred: { email: string; password: string; } = ev.detail.data;
+          // createUserWithEmailAndPassword(auth, cred.email, cred.password)
+          //   .then((userCredential) => { const user = userCredential.user; })
+          //   .catch((error) => { const errorCode = error.code; const errorMessage = error.message; });
+          setLoading(true);
+          signInWithEmailAndPassword(auth, cred.email, cred.password)
+            .then((userCredential) => {
+              // console.log(userCredential.user); 
+              getContainersDetail();
+            })
+            .catch((error) => { Capacitor.toast(error.message); setLoading(false); });
+        }
+      },
+    });
+  }
+  const logout = () => {
+    auth?.signOut();
+    setContainers([]);
+    setFiltered([]);
+  }
 
   const getContainersDetail = _.debounce(() => {
     setLoading(true);
@@ -130,12 +159,20 @@ const Containers: React.FC<{
       <IonHeader>
         <IonToolbar>
           <IonTitle>Firebase</IonTitle>
+          <IonButtons slot="start">
+            <IonButton color={swaping ? 'warning' : 'light'} onClick={openLoginModal} hidden={loading || auth?.currentUser}>
+              <IonIcon icon={logInOutline} />
+            </IonButton>
+            <IonButton color={swaping ? 'warning' : 'light'} onClick={logout} hidden={!auth?.currentUser}>
+              <IonIcon icon={logOutOutline} />
+            </IonButton>
+          </IonButtons>
           <IonButtons slot="end">
             <IonSpinner hidden={!loading} />
-            <IonButton color={swaping ? 'warning' : 'light'} onClick={onSwapHandler}>
+            <IonButton color={swaping ? 'warning' : 'light'} onClick={onSwapHandler} hidden={!auth?.currentUser}>
               <IonIcon icon={swapVerticalOutline} />
             </IonButton>
-            <IonButton onClick={() => history.push(`/new_container?length=${containers.length}`)}>
+            <IonButton onClick={() => history.push(`/new_container?length=${containers.length}`)} hidden={!auth?.currentUser}>
               <IonIcon icon={addOutline} />
             </IonButton>
           </IonButtons>
